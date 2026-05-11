@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试用户注册功能</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
+        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">测试用户注册功能</h1>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2" for="testUsername">用户名</label>
+            <input type="text" id="testUsername" class="w-full px-4 py-2 border border-gray-300 rounded-md" value="testuser1">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2" for="testEmail">邮箱</label>
+            <input type="email" id="testEmail" class="w-full px-4 py-2 border border-gray-300 rounded-md" value="test1@example.com">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2" for="testPassword">密码</label>
+            <input type="password" id="testPassword" class="w-full px-4 py-2 border border-gray-300 rounded-md" value="123456">
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-gray-700 mb-2" for="testConfirmPassword">确认密码</label>
+            <input type="password" id="testConfirmPassword" class="w-full px-4 py-2 border border-gray-300 rounded-md" value="123456">
+        </div>
+        
+        <button id="testRegister" class="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition mb-4">
+            模拟注册
+        </button>
+        
+        <button id="testLogin" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition mb-4">
+            模拟登录
+        </button>
+        
+        <button id="testViewUsers" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600 transition mb-4">
+            查看用户列表
+        </button>
+        
+        <div id="testResults" class="mt-4 p-4 bg-gray-50 rounded-md">
+            <h2 class="text-lg font-semibold mb-2">测试结果:</h2>
+            <pre id="resultsText" class="whitespace-pre-wrap text-sm"></pre>
+        </div>
+    </div>
+
+    <script>
+        // 引入必要的函数
+        const hashPassword = (pwd) => {
+            let hash = 0;
+            for (let i = 0; i < pwd.length; i++) {
+                const char = pwd.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return hash.toString(16);
+        };
+
+        // 模拟API接口
+        class API {
+            static getUsers() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        setTimeout(() => {
+                            const users = localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : {};
+                            const userList = Object.keys(users).map(username => {
+                                const user = users[username];
+                                return {
+                                    username: username,
+                                    email: user.email,
+                                    registerTime: user.registerTime,
+                                    lastLogin: user.lastLogin
+                                };
+                            });
+                            resolve({ success: true, data: userList });
+                        }, 300);
+                    } catch (error) {
+                        reject({ success: false, message: '获取用户列表失败' });
+                    }
+                });
+            }
+        }
+
+        // DOM元素
+        const testRegisterBtn = document.getElementById('testRegister');
+        const testLoginBtn = document.getElementById('testLogin');
+        const testViewUsersBtn = document.getElementById('testViewUsers');
+        const resultsText = document.getElementById('resultsText');
+        const testUsername = document.getElementById('testUsername');
+        const testEmail = document.getElementById('testEmail');
+        const testPassword = document.getElementById('testPassword');
+        const testConfirmPassword = document.getElementById('testConfirmPassword');
+
+        // 模拟注册
+        testRegisterBtn.addEventListener('click', () => {
+            const username = testUsername.value.trim();
+            const email = testEmail.value.trim();
+            const password = testPassword.value.trim();
+            const confirmPassword = testConfirmPassword.value.trim();
+
+            // 验证输入
+            if (!username || !email || !password || !confirmPassword) {
+                resultsText.textContent = '请填写所有字段';
+                return;
+            }
+
+            if (password.length < 6) {
+                resultsText.textContent = '密码至少需要6位';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                resultsText.textContent = '两次输入的密码不一致';
+                return;
+            }
+
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                resultsText.textContent = '请输入有效的邮箱地址';
+                return;
+            }
+
+            // 检查用户名是否已存在
+            const users = localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : {};
+            if (users[username]) {
+                resultsText.textContent = '用户名已存在';
+                return;
+            }
+
+            // 检查邮箱是否已存在
+            for (const user in users) {
+                if (users[user].email === email) {
+                    resultsText.textContent = '邮箱已被注册';
+                    return;
+                }
+            }
+
+            // 注册成功，存储完整用户信息
+            const registerTime = new Date().toISOString();
+            users[username] = {
+                password: hashPassword(password),
+                email: email,
+                registerTime: registerTime,
+                lastLogin: null
+            };
+            localStorage.setItem('users', JSON.stringify(users));
+            resultsText.textContent = '注册成功！\n用户信息已存储到localStorage中。';
+        });
+
+        // 模拟登录
+        testLoginBtn.addEventListener('click', () => {
+            const username = testUsername.value.trim();
+            const password = testPassword.value.trim();
+
+            if (!username || !password) {
+                resultsText.textContent = '请输入用户名和密码';
+                return;
+            }
+
+            // 从localStorage获取用户数据
+            const users = localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : {};
+            
+            if (!users[username] || users[username].password !== hashPassword(password)) {
+                resultsText.textContent = '用户名或密码错误';
+                return;
+            }
+
+            // 更新最后登录时间
+            users[username].lastLogin = new Date().toISOString();
+            localStorage.setItem('users', JSON.stringify(users));
+            localStorage.setItem('currentUser', JSON.stringify(username));
+            resultsText.textContent = '登录成功！\n当前用户已存储到localStorage中。';
+        });
+
+        // 查看用户列表
+        testViewUsersBtn.addEventListener('click', async () => {
+            try {
+                const response = await API.getUsers();
+                if (response.success) {
+                    resultsText.textContent = '用户列表:\n' + JSON.stringify(response.data, null, 2);
+                } else {
+                    resultsText.textContent = '获取用户列表失败: ' + response.message;
+                }
+            } catch (error) {
+                resultsText.textContent = '获取用户列表失败: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

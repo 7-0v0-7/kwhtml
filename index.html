@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康仪表盘 - 个人健康管理平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#16A34A',
+                        secondary: '#F59E0B',
+                        neutral: '#F3F4F6',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-neutral min-h-screen flex flex-col">
+    <!-- 侧边栏 + 顶部导航 -->
+    <div class="flex flex-col md:flex-row">
+        <!-- 侧边栏 -->
+        <aside class="bg-white shadow-md w-full md:w-64 h-auto md:h-screen py-6">
+            <div class="flex items-center justify-center md:justify-start px-6 mb-8">
+                <i class="fa fa-heartbeat text-primary text-2xl mr-2"></i>
+                <h1 class="text-xl font-bold text-gray-800">健康管理平台</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li class="mb-2">
+                        <a href="admin.html" class="flex items-center px-6 py-3 bg-primary/10 text-primary">
+                            <i class="fa fa-dashboard mr-3"></i>
+                            <span>健康仪表盘</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="health.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                            <i class="fa fa-pencil-square-o mr-3"></i>
+                            <span>健康数据记录</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="mubiao.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                            <i class="fa fa-bullseye mr-3"></i>
+                            <span>健康目标设置</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="user.html" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                            <i class="fa fa-user mr-3"></i>
+                            <span>个人资料</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a id="logoutBtn" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 cursor-pointer">
+                            <i class="fa fa-sign-out mr-3"></i>
+                            <span>退出登录</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-grow p-6">
+            <!-- 顶部信息 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">欢迎回来，<span id="usernameDisplay">用户名</span>！</h2>
+                        <p class="text-gray-600 mt-1" id="currentDate">2025年1月1日</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button class="mt-4 md:mt-0 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition" onclick="window.location.href='record.html'">
+                            <i class="fa fa-plus mr-2"></i>记录今日数据
+                        </button>
+                        <button class="mt-4 md:mt-0 bg-secondary text-white px-4 py-2 rounded-md hover:bg-secondary/90 transition" onclick="window.location.href='admin-dashboard/login.html'">
+                            <i class="fa fa-sign-in mr-2"></i>后台管理登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 健康数据概览 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- 步数卡片 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">今日步数</p>
+                            <h3 class="text-3xl font-bold text-gray-800" id="todaySteps">0</h3>
+                        </div>
+                        <div class="bg-primary/10 p-3 rounded-full">
+                            <i class="fa fa-shoe-prints text-primary text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div id="stepsProgress" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500" id="stepsTargetText">目标：0 步</p>
+                </div>
+
+                <!-- 饮水量卡片 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">今日饮水量</p>
+                            <h3 class="text-3xl font-bold text-gray-800" id="todayWater">0</h3>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fa fa-tint text-blue-500 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div id="waterProgress" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500" id="waterTargetText">目标：0 ml</p>
+                </div>
+
+                <!-- 睡眠时间卡片 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">昨日睡眠时间</p>
+                            <h3 class="text-3xl font-bold text-gray-800" id="yesterdaySleep">0</h3>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fa fa-moon-o text-purple-500 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div id="sleepProgress" class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500" id="sleepTargetText">目标：0 小时</p>
+                </div>
+
+                <!-- 卡路里消耗卡片 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">今日卡路里消耗</p>
+                            <h3 class="text-3xl font-bold text-gray-800" id="todayCalorie">0</h3>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <i class="fa fa-fire text-red-500 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div id="calorieProgress" class="bg-red-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500" id="calorieTargetText">目标：0 千卡</p>
+                </div>
+            </div>
+          <!-- 设备同步模块（手环/手表） -->
+            <div class="device-section">
+  <h3>📱 健康设备同步（手环）</h3>
+  <div class="device-status">
+    <p>绑定状态：<span id="deviceStatus">未绑定</span></p>
+    <button id="bindDeviceBtn">绑定小米手环</button>
+    <button id="syncDataBtn" style="background:#28a745;margin-left:10px;">一键同步今日数据</button>
+  </div>
+
+  <!-- 同步结果展示 -->
+  <div class="sync-result" id="syncResult" style="display:none;margin-top:20px;">
+    <h4>同步成功 ✅</h4>
+    <div class="data-grid">
+      <div>步数：<span id="syncSteps"></span></div>
+      <div>心率：<span id="syncHeart"></span> bpm</div>
+      <div>睡眠：<span id="syncSleep"></span> h</div>
+      <div>卡路里：<span id="syncCal"></span> kcal</div>
+      <div>血氧：<span id="syncOxygen"></span> %</div>
+    </div>
+  </div>
+
+  <!-- 同步历史 -->
+  <div class="sync-history" style="margin-top:30px;">
+    <h4>同步历史记录</h4>
+    <div id="historyList"></div>
+  </div>
+            </div>
+            <!-- 健康趋势图表 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">7天步数趋势</h3>
+                    <canvas id="stepsChart" height="250"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">7天健康数据汇总</h3>
+                    <canvas id="healthSummaryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

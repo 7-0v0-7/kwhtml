@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --secondary-color: #1E40AF;
+            --background-color: #F3F4F6;
+            --card-background: #FFFFFF;
+            --text-color: #1F2937;
+            --muted-text-color: #6B7280;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .sidebar {
+            background-color: var(--card-background);
+            transition: width 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 4.5rem;
+        }
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-logo .logo-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-footer .sidebar-text {
+            display: none;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: var(--muted-text-color);
+            transition: background-color 0.2s, color 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-item:hover {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+        }
+        .sidebar-item.active {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        .sidebar-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        .top-bar {
+            background-color: var(--card-background);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        .search-bar {
+            background-color: #F3F4F6;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            width: 24rem;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            margin-left: 0.5rem;
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 1.25rem;
+        }
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .pagination button {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #E5E7EB;
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pagination button:hover {
+            background-color: #F9FAFB;
+        }
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        th {
+            background-color: #F9FAFB;
+            font-weight: 500;
+            color: var(--muted-text-color);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+        .btn-outline {
+            border: 1px solid #E5E7EB;
+            color: var(--text-color);
+        }
+        .btn-outline:hover {
+            background-color: #F9FAFB;
+        }
+        .btn-danger {
+            background-color: #EF4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #DC2626;
+        }
+        .user-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .filter-group label {
+            font-size: 0.875rem;
+            color: var(--muted-text-color);
+        }
+        .filter-group select, .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex flex-col">
+        <div class="sidebar-logo p-4 flex items-center">
+            <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600"></i>
+            <span class="logo-text text-xl font-bold ml-2">后台管理</span>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="sidebar-item">
+                <i data-lucide="home" class="sidebar-icon"></i>
+                <span class="sidebar-text">首页</span>
+            </a>
+            <a href="order-management.html" class="sidebar-item active">
+                <i data-lucide="shopping-cart" class="sidebar-icon"></i>
+                <span class="sidebar-text">订单管理</span>
+            </a>
+            <a href="user-management.html" class="sidebar-item">
+                <i data-lucide="users" class="sidebar-icon"></i>
+                <span class="sidebar-text">用户管理</span>
+            </a>
+            <a href="image-management.html" class="sidebar-item">
+                <i data-lucide="image" class="sidebar-icon"></i>
+                <span class="sidebar-text">图片管理</span>
+            </a>
+            <a href="system-settings.html" class="sidebar-item">
+                <i data-lucide="settings" class="sidebar-icon"></i>
+                <span class="sidebar-text">系统管理</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer p-4">
+            <button id="sidebar-toggle" class="sidebar-item w-full justify-start">
+                <i data-lucide="chevrons-left" class="sidebar-icon"></i>
+                <span class="sidebar-text">收起</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Top Bar -->
+        <header class="top-bar h-16 flex items-center justify-between px-6">
+            <div class="search-bar">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                <input type="text" placeholder="搜索订单...">
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="btn btn-outline" onclick="window.location.href='../admin.html'">
+                    <i data-lucide="home" class="w-5 h-5 mr-2"></i>
+                    返回健康平台
+                </button>
+                <button class="btn btn-outline">
+                    <i data-lucide="bell" class="w-5 h-5 mr-2"></i>
+                    通知
+                </button>
+                <div class="flex items-center">
+                    <div class="user-avatar">JD</div>
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold">John Doe</p>
+                        <p class="text-xs text-gray-500">Admin</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-grow p-6 overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6">订单管理</h1>
+
+            <!-- Filters -->
+            <div class="card mb-6">
+                <div class="filter-container">
+                    <div class="filter-group">
+                        <label for="order-status">订单状态:</label>
+                        <select id="order-status">
+                            <option value="all">全部</option>
+                            <option value="completed">已完成</option>
+                            <option value="processing">处理中</option>
+                            <option value="cancelled">已取消</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="order-date">日期范围:</label>
+                        <input type="date" id="order-date-from">
+                        <span>至</span>
+                        <input type="date" id="order-date-to">
+                    </div>
+                    <div class="filter-group">
+                        <label for="order-amount">金额范围:</label>
+                        <input type="number" id="order-amount-from" placeholder="最小">
+                        <span>至</span>
+                        <input type="number" id="order-amount-to" placeholder="最大">
+                    </div>
+                    <button class="btn btn-primary ml-auto" id="apply-filters">
+                        <i data-lucide="filter" class="w-5 h-5 mr-2"></i>
+                        应用筛选
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">订单列表</h2>
+                    <button class="btn btn-primary" id="add-order-btn">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        新增订单
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="orders-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all">
+                                </th>
+                                <th>订单编号</th>
+                                <th>客户</th>
+                                <th>日期</th>
+                                <th>状态</th>
+                                <th>金额</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>#1001</td>
+                                <td>张三</td>
+                                <td>2023-10-15</td>
+                                <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">已完成</span></td>
+                                <td>$25.00</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-order-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-order-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-order-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>#1002</td>
+                                <td>李四</td>
+                                <td>2023-10-14</td>
+                                <td><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">处理中</span></td>
+                                <td>$15.50</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-order-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-order-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-order-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>#1003</td>
+                                <td>王五</td>
+                                <td>2023-10-13</td>
+                                <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">已取消</span></td>
+                                <td>$30.00</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-order-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-order-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-order-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                             <tr>
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>#1004</td>
+                                <td>赵六</td>
+                                <td>2023-10-12</td>
+                                <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">已完成</span></td>
+                                <td>$45.75</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-order-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-order-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-order-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                             <tr>
+                                <td><input type="checkbox" class="order-checkbox"></td>
+                                <td>#1005</td>
+                                <td>孙七</td>
+                                <td>2023-10-11</td>
+                                <td><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">处理中</span></td>
+                                <td>$89.20</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-order-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-order-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-order-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Order Modal -->
+    <div id="order-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold mb-4" id="modal-title">新增订单</h2>
+            <form id="order-form">
+                <div class="form-group">
+                    <label for="modal-order-id">订单编号</label>
+                    <input type="text" id="modal-order-id" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="modal-customer-name">客户名称</label>
+                    <input type="text" id="modal-customer-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-date">订单日期</label>
+                    <input type="date" id="modal-order-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-status">订单状态</label>
+                    <select id="modal-order-status" required>
+                        <option value="completed">已完成</option>
+                        <option value="processing">处理中</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-amount">订单金额</label>
+                    <input type="number" id="modal-order-amount" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-notes">订单备注</label>
+                    <textarea id="modal-order-notes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancel-modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Order Modal -->
+    <div id="view-order-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold mb-4">查看订单</h2>
+            <div id="order-details">
+                <!-- Order details will be inserted here -->
+            </div>
+             <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="close-view-modal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查用户是否已登录
+        if (!localStorage.getItem('currentUser')) {
+            // 如果未登录，重定向到登录页面
+            window.location.href = '../login.html';
+        }
+        
+        lucide.createIcons();
+
+        // Sidebar Toggle
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarToggleIcon = sidebarToggle.querySelector('i');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-right');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '展开';
+            } else {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-left');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '收起';
+            }
+            lucide.createIcons();
+        });
+
+        // Pagination
+        const paginationButtons = document.querySelectorAll('.pagination button');
+        paginationButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                paginationButtons.forEach(btn => btn.classList.remove('active'));
+                if (!button.querySelector('i')) {
+                    button.classList.add('active');
+                }
+            });
+        });
+        
+        // Search Functionality
+        const searchInput = document.querySelector('.search-bar input');
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                searchOrders(searchInput.value);
+                searchInput.value = '';
+            }
+        });
+
+        // Order Data
+        let orders = [
+            { id: '#1001', customer: '张三', date: '2023-10-15', status: 'completed', amount: 25.00 },
+            { id: '#1002', customer: '李四', date: '2023-10-14', status: 'processing', amount: 15.50 },
+            { id: '#1003', customer: '王五', date: '2023-10-13', status: 'cancelled', amount: 30.00 },
+            { id: '#1004', customer: '赵六', date: '2023-10-12', status: 'completed', amount: 45.75 },
+            { id: '#1005', customer: '孙七', date: '2023-10-11', status: 'processing', amount: 89.20 }
+        ];
+
+        let currentEditOrderId = null;
+
+        // Render Orders Table
+        function renderOrdersTable(ordersData = orders) {
+            const tbody = document.querySelector('#orders-table tbody');
+            tbody.innerHTML = '';
+            
+            ordersData.forEach(order => {
+                const row = document.createElement('tr');
+                let statusBadge = '';
+                if (order.status === 'completed') {
+                    statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">已完成</span>';
+                } else if (order.status === 'processing') {
+                    statusBadge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">处理中</span>';
+                } else {
+                    statusBadge = '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">已取消</span>';
+                }
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" class="order-checkbox"></td>
+                    <td>${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.date}</td>
+                    <td>${statusBadge}</td>
+                    <td>$${order.amount.toFixed(2)}</td>
+                    <td>
+                        <button class="text-blue-600 hover:text-blue-800 edit-order-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                        <button class="text-red-600 hover:text-red-800 ml-2 delete-order-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-order-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            lucide.createIcons();
+            attachEventListeners();
+        }
+
+        // Attach Event Listeners
+        function attachEventListeners() {
+            // Remove existing listeners to prevent duplicates
+            const editButtons = document.querySelectorAll('.edit-order-btn');
+            const deleteButtons = document.querySelectorAll('.delete-order-btn');
+            const viewButtons = document.querySelectorAll('.view-order-btn');
+            
+            editButtons.forEach(button => {
+                button.removeEventListener('click', handleEditOrder);
+                button.addEventListener('click', handleEditOrder);
+            });
+
+            deleteButtons.forEach(button => {
+                button.removeEventListener('click', handleDeleteOrder);
+                button.addEventListener('click', handleDeleteOrder);
+            });
+
+            viewButtons.forEach(button => {
+                button.removeEventListener('click', handleViewOrder);
+                button.addEventListener('click', handleViewOrder);
+            });
+            
+            const selectAllCheckbox = document.getElementById('select-all');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.removeEventListener('change', handleSelectAll);
+                selectAllCheckbox.addEventListener('change', handleSelectAll);
+            }
+        }
+
+        // Modal Functionality
+        const orderModal = document.getElementById('order-modal');
+        const viewOrderModal = document.getElementById('view-order-modal');
+        const addOrderBtn = document.getElementById('add-order-btn');
+        const closeBtns = document.querySelectorAll('.close');
+        const cancelModalBtn = document.getElementById('cancel-modal');
+        const closeViewModalBtn = document.getElementById('close-view-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const orderForm = document.getElementById('order-form');
+
+        addOrderBtn.addEventListener('click', () => {
+            currentEditOrderId = null; // Ensure we're in add mode
+            openOrderModal();
+        });
+
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                orderModal.style.display = "none";
+                viewOrderModal.style.display = "none";
+            });
+        });
+
+        cancelModalBtn.addEventListener('click', () => {
+            orderModal.style.display = "none";
+        });
+        
+        closeViewModalBtn.addEventListener('click', () => {
+            viewOrderModal.style.display = "none";
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == orderModal) {
+                orderModal.style.display = "none";
+            }
+            if (event.target == viewOrderModal) {
+                viewOrderModal.style.display = "none";
+            }
+        });
+
+        // Open Order Modal
+        function openOrderModal(orderId = null) {
+            currentEditOrderId = orderId;
+            if (orderId) {
+                const order = orders.find(o => o.id === orderId);
+                modalTitle.textContent = '编辑订单';
+                document.getElementById('modal-order-id').value = order.id;
+                document.getElementById('modal-customer-name').value = order.customer;
+                document.getElementById('modal-order-date').value = order.date;
+                document.getElementById('modal-order-status').value = order.status;
+                document.getElementById('modal-order-amount').value = order.amount;
+            } else {
+                modalTitle.textContent = '新增订单';
+                document.getElementById('modal-order-id').value = `#${Math.floor(1000 + Math.random() * 9000)}`;
+                orderForm.reset();
+            }
+            orderModal.style.display = "block";
+        }
+
+        // Handle Form Submission
+        orderForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveOrder();
+        });
+
+        // Save Order
+        function saveOrder() {
+            const orderData = {
+                id: document.getElementById('modal-order-id').value,
+                customer: document.getElementById('modal-customer-name').value,
+                date: document.getElementById('modal-order-date').value,
+                status: document.getElementById('modal-order-status').value,
+                amount: parseFloat(document.getElementById('modal-order-amount').value)
+            };
+
+            if (currentEditOrderId) {
+                // Edit existing order
+                const index = orders.findIndex(o => o.id === currentEditOrderId);
+                orders[index] = orderData;
+            } else {
+                // Add new order
+                orders.push(orderData);
+            }
+            
+            renderOrdersTable();
+            orderModal.style.display = "none";
+            currentEditOrderId = null; // Reset the edit flag
+        }
+
+        // Handle Edit Order
+        function handleEditOrder(e) {
+            const row = e.target.closest('tr');
+            const orderId = row.cells[1].textContent;
+            openOrderModal(orderId);
+        }
+
+        // Handle Delete Order
+        function handleDeleteOrder(e) {
+            const row = e.target.closest('tr');
+            const orderId = row.cells[1].textContent;
+            if (confirm(`确定要删除订单 ${orderId} 吗？`)) {
+                orders = orders.filter(order => order.id !== orderId);
+                renderOrdersTable();
+            }
+        }
+
+        // Handle View Order
+        function handleViewOrder(e) {
+            const row = e.target.closest('tr');
+            const orderId = row.cells[1].textContent;
+            const customerName = row.cells[2].textContent;
+            const orderDate = row.cells[3].textContent;
+            const orderStatus = row.cells[4].textContent;
+            const orderAmount = row.cells[5].textContent;
+
+            const orderDetailsHtml = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>订单编号:</strong> ${orderId}</div>
+                    <div><strong>客户名称:</strong> ${customerName}</div>
+                    <div><strong>订单日期:</strong> ${orderDate}</div>
+                    <div><strong>订单状态:</strong> ${orderStatus}</div>
+                    <div><strong>订单金额:</strong> ${orderAmount}</div>
+                </div>
+                <div class="mt-4">
+                    <h3 class="font-semibold mb-2">订单商品</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>商品名称</th>
+                                    <th>数量</th>
+                                    <th>单价</th>
+                                    <th>小计</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>商品 A</td>
+                                    <td>1</td>
+                                    <td>$10.00</td>
+                                    <td>$10.00</td>
+                                </tr>
+                                <tr>
+                                    <td>商品 B</td>
+                                    <td>2</td>
+                                    <td>$5.00</td>
+                                    <td>$10.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            document.getElementById('order-details').innerHTML = orderDetailsHtml;
+            viewOrderModal.style.display = "block";
+        }
+
+        // Handle Select All
+        function handleSelectAll(e) {
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        }
+
+        // Search Orders
+        function searchOrders(keyword) {
+            if (!keyword) {
+                renderOrdersTable();
+                return;
+            }
+            
+            const filteredOrders = orders.filter(order => 
+                order.id.includes(keyword) || 
+                order.customer.includes(keyword) ||
+                order.date.includes(keyword)
+            );
+            
+            renderOrdersTable(filteredOrders);
+        }
+
+        // Filter Functionality
+        const applyFiltersBtn = document.getElementById('apply-filters');
+        applyFiltersBtn.addEventListener('click', () => {
+            const statusFilter = document.getElementById('order-status').value;
+            const dateFrom = document.getElementById('order-date-from').value;
+            const dateTo = document.getElementById('order-date-to').value;
+            const amountFrom = document.getElementById('order-amount-from').value;
+            const amountTo = document.getElementById('order-amount-to').value;
+
+            let filteredOrders = [...orders];
+            
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
+            }
+            
+            // Apply date filter
+            if (dateFrom) {
+                filteredOrders = filteredOrders.filter(order => order.date >= dateFrom);
+            }
+            
+            if (dateTo) {
+                filteredOrders = filteredOrders.filter(order => order.date <= dateTo);
+            }
+            
+            // Apply amount filter
+            if (amountFrom) {
+                filteredOrders = filteredOrders.filter(order => order.amount >= parseFloat(amountFrom));
+            }
+            
+            if (amountTo) {
+                filteredOrders = filteredOrders.filter(order => order.amount <= parseFloat(amountTo));
+            }
+            
+            renderOrdersTable(filteredOrders);
+        });
+
+        // Initial render
+        renderOrdersTable();
+        
+        // Ensure event listeners are attached after initial render
+        setTimeout(() => {
+            attachEventListeners();
+        }, 100);
+
+    </script>
+</body>
+</html>

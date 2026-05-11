@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="../api.js"></script>
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --secondary-color: #1E40AF;
+            --background-color: #F3F4F6;
+            --card-background: #FFFFFF;
+            --text-color: #1F2937;
+            --muted-text-color: #6B7280;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .sidebar {
+            background-color: var(--card-background);
+            transition: width 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 4.5rem;
+        }
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-logo .logo-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-footer .sidebar-text {
+            display: none;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: var(--muted-text-color);
+            transition: background-color 0.2s, color 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-item:hover {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+        }
+        .sidebar-item.active {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        .sidebar-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        .top-bar {
+            background-color: var(--card-background);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        .search-bar {
+            background-color: #F3F4F6;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            width: 24rem;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            margin-left: 0.5rem;
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 1.25rem;
+        }
+        .stat-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-info h3 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .stat-info p {
+            color: var(--muted-text-color);
+            font-size: 0.875rem;
+        }
+        .stat-change {
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem;
+        }
+        .stat-change.positive {
+            color: #10B981;
+        }
+        .stat-change.negative {
+            color: #EF4444;
+        }
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .pagination button {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #E5E7EB;
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pagination button:hover {
+            background-color: #F9FAFB;
+        }
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        th {
+            background-color: #F9FAFB;
+            font-weight: 500;
+            color: var(--muted-text-color);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+        .btn-outline {
+            border: 1px solid #E5E7EB;
+            color: var(--text-color);
+        }
+        .btn-outline:hover {
+            background-color: #F9FAFB;
+        }
+        .user-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex flex-col">
+        <div class="sidebar-logo p-4 flex items-center">
+            <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600"></i>
+            <span class="logo-text text-xl font-bold ml-2">后台管理</span>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="sidebar-item active">
+                <i data-lucide="home" class="sidebar-icon"></i>
+                <span class="sidebar-text">首页</span>
+            </a>
+            <a href="order-management.html" class="sidebar-item">
+                <i data-lucide="shopping-cart" class="sidebar-icon"></i>
+                <span class="sidebar-text">订单管理</span>
+            </a>
+            <a href="user-management.html" class="sidebar-item">
+                <i data-lucide="users" class="sidebar-icon"></i>
+                <span class="sidebar-text">用户管理</span>
+            </a>
+            <a href="image-management.html" class="sidebar-item">
+                <i data-lucide="image" class="sidebar-icon"></i>
+                <span class="sidebar-text">图片管理</span>
+            </a>
+            <a href="system-settings.html" class="sidebar-item">
+                <i data-lucide="settings" class="sidebar-icon"></i>
+                <span class="sidebar-text">系统管理</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer p-4">
+            <button id="sidebar-toggle" class="sidebar-item w-full justify-start">
+                <i data-lucide="chevrons-left" class="sidebar-icon"></i>
+                <span class="sidebar-text">收起</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Top Bar -->
+        <header class="top-bar h-16 flex items-center justify-between px-6">
+            <div class="search-bar">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                <input type="text" placeholder="搜索...">
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="btn btn-outline" onclick="window.location.href='../index.html'">
+                    <i data-lucide="home" class="w-5 h-5 mr-2"></i>
+                    返回健康平台
+                </button>
+                <button class="btn btn-outline">
+                    <i data-lucide="bell" class="w-5 h-5 mr-2"></i>
+                    通知
+                </button>
+                <div class="flex items-center">
+                    <div class="user-avatar">JD</div>
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold">John Doe</p>
+                        <p class="text-xs text-gray-500">Admin</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-grow p-6 overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6">后台管理页面</h1>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>$28.01</h3>
+                            <p>总收入</p>
+                        </div>
+                        <div class="stat-change positive">
+                            <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i>
+                            +2.5%
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>$90</h3>
+                            <p>订单</p>
+                        </div>
+                        <div class="stat-change positive">
+                            <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i>
+                            +1.2%
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>$88</h3>
+                            <p>客户</p>
+                        </div>
+                        <div class="stat-change negative">
+                            <i data-lucide="trending-down" class="w-4 h-4 mr-1"></i>
+                            -0.5%
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>$40</h3>
+                            <p>退款</p>
+                        </div>
+                        <div class="stat-change negative">
+                            <i data-lucide="trending-down" class="w-4 h-4 mr-1"></i>
+                            -1.5%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-4">销售趋势</h2>
+                    <div style="height:300px">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-4">客户分布</h2>
+                    <div style="height:300px">
+                        <canvas id="customerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 订单列表 -->
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">订单列表</h2>
+                        <button class="btn btn-primary">
+                            <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                            新增订单
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>订单编号</th>
+                                    <th>客户</th>
+                                    <th>日期</th>
+                                    <th>状态</th>
+                                    <th>金额</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>#1001</td>
+                                    <td>张三</td>
+                                    <td>2023-10-15</td>
+                                    <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">已完成</span></td>
+                                    <td>$25.00</td>
+                                    <td>
+                                        <button class="text-blue-600 hover:text-blue-800"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 ml-2"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#1002</td>
+                                    <td>李四</td>
+                                    <td>2023-10-14</td>
+                                    <td><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">处理中</span></td>
+                                    <td>$15.50</td>
+                                    <td>
+                                        <button class="text-blue-600 hover:text-blue-800"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 ml-2"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>#1003</td>
+                                    <td>王五</td>
+                                    <td>2023-10-13</td>
+                                    <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">已取消</span></td>
+                                    <td>$30.00</td>
+                                    <td>
+                                        <button class="text-blue-600 hover:text-blue-800"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 ml-2"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                        <button class="active">1</button>
+                        <button>2</button>
+                        <button>3</button>
+                        <button><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                    </div>
+                </div>
+
+                <!-- 用户管理 -->
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">用户管理</h2>
+                        <div class="flex items-center space-x-2">
+                            <div id="userLoading" class="hidden text-sm text-gray-500">
+                                <i data-lucide="loader-2" class="w-4 h-4 mr-1 animate-spin"></i>加载中...
+                            </div>
+                            <button id="refreshUsers" class="btn btn-outline">
+                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="userError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mr-2 inline"></i>
+                        <span id="userErrorMessage">加载用户数据失败</span>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>注册时间</th>
+                                    <th>最后登录</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center py-6 text-gray-500">
+                                        <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                                        <p>暂无用户数据</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Order Modal -->
+    <div id="order-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold mb-4" id="modal-title">新增订单</h2>
+            <form id="order-form">
+                <div class="form-group">
+                    <label for="modal-order-id">订单编号</label>
+                    <input type="text" id="modal-order-id" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="modal-customer-name">客户名称</label>
+                    <input type="text" id="modal-customer-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-date">订单日期</label>
+                    <input type="date" id="modal-order-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-status">订单状态</label>
+                    <select id="modal-order-status" required>
+                        <option value="completed">已完成</option>
+                        <option value="processing">处理中</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-order-amount">订单金额</label>
+                    <input type="number" id="modal-order-amount" step="0.01" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancel-modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+    </style>
+
+    <script>
+        // 检查用户是否已登录
+        if (!localStorage.getItem('currentUser')) {
+            // 如果未登录，重定向到登录页面
+            window.location.href = '../login.html';
+        }
+        
+        lucide.createIcons();
+
+        // Sidebar Toggle
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarToggleIcon = sidebarToggle.querySelector('i');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-right');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '展开';
+            } else {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-left');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '收起';
+            }
+            lucide.createIcons();
+        });
+
+        // Sales Chart
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        const salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: ['一月', '二月', '三月', '四月', '五月', '六月'],
+                datasets: [{
+                    label: '销售额',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'var(--primary-color)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Customer Chart
+        const customerCtx = document.getElementById('customerChart').getContext('2d');
+        const customerChart = new Chart(customerCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['新客户', '老客户', 'VIP客户'],
+                datasets: [{
+                    label: '客户类型',
+                    data: [300, 150, 100],
+                    backgroundColor: [
+                        '#3B82F6',
+                        '#10B981',
+                        '#F59E0B'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+        
+        // Pagination
+        const paginationButtons = document.querySelectorAll('.pagination button');
+        paginationButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                paginationButtons.forEach(btn => btn.classList.remove('active'));
+                if (!button.querySelector('i')) {
+                    button.classList.add('active');
+                }
+            });
+        });
+
+        // Table Operations
+        const editButtons = document.querySelectorAll('td button:nth-child(1)');
+        const deleteButtons = document.querySelectorAll('td button:nth-child(2)');
+
+        editButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const orderId = e.target.closest('tr').querySelector('td').textContent;
+                alert(`编辑订单 ${orderId}`);
+            });
+        });
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const orderId = e.target.closest('tr').querySelector('td').textContent;
+                if (confirm(`确定要删除订单 ${orderId} 吗？`)) {
+                    e.target.closest('tr').remove();
+                }
+            });
+        });
+        
+        // Search Functionality
+        const searchInput = document.querySelector('.search-bar input');
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                alert(`搜索: ${searchInput.value}`);
+                searchInput.value = '';
+            }
+        });
+
+        // Order Management Functionality
+        const orderModal = document.getElementById('order-modal');
+        const closeModalBtn = document.querySelector('.close');
+        const cancelModalBtn = document.getElementById('cancel-modal');
+        const addOrderBtn = document.querySelector('.btn-primary');
+        const orderForm = document.getElementById('order-form');
+        const modalTitle = document.getElementById('modal-title');
+        const ordersTableBody = document.querySelector('tbody');
+
+        let orders = [
+            { id: '#1001', customer: '张三', date: '2023-10-15', status: 'completed', amount: 25.00 },
+            { id: '#1002', customer: '李四', date: '2023-10-14', status: 'processing', amount: 15.50 },
+            { id: '#1003', customer: '王五', date: '2023-10-13', status: 'cancelled', amount: 30.00 }
+        ];
+        let currentEditOrderId = null;
+
+        function renderTable() {
+            ordersTableBody.innerHTML = '';
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                let statusBadge = '';
+                if (order.status === 'completed') {
+                    statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">已完成</span>';
+                } else if (order.status === 'processing') {
+                    statusBadge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">处理中</span>';
+                } else {
+                    statusBadge = '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">已取消</span>';
+                }
+
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.date}</td>
+                    <td>${statusBadge}</td>
+                    <td>$${order.amount.toFixed(2)}</td>
+                    <td>
+                        <button class="text-blue-600 hover:text-blue-800 edit-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                        <button class="text-red-600 hover:text-red-800 ml-2 delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </td>
+                `;
+                ordersTableBody.appendChild(row);
+            });
+            lucide.createIcons();
+
+            // Add event listeners to new buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', handleEditOrder);
+            });
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteOrder);
+            });
+        }
+
+        function openModal(orderId = null) {
+            currentEditOrderId = orderId;
+            if (orderId) {
+                const order = orders.find(o => o.id === orderId);
+                modalTitle.textContent = '编辑订单';
+                document.getElementById('modal-order-id').value = order.id;
+                document.getElementById('modal-customer-name').value = order.customer;
+                document.getElementById('modal-order-date').value = order.date;
+                document.getElementById('modal-order-status').value = order.status;
+                document.getElementById('modal-order-amount').value = order.amount;
+            } else {
+                modalTitle.textContent = '新增订单';
+                document.getElementById('modal-order-id').value = `#${Math.floor(1000 + Math.random() * 9000)}`;
+                orderForm.reset();
+            }
+            orderModal.style.display = 'block';
+        }
+
+        function closeModal() {
+            orderModal.style.display = 'none';
+            currentEditOrderId = null;
+        }
+
+        function handleEditOrder(e) {
+            const orderId = e.target.closest('tr').cells[0].textContent;
+            openModal(orderId);
+        }
+
+        function handleDeleteOrder(e) {
+            const orderId = e.target.closest('tr').cells[0].textContent;
+            if (confirm(`确定要删除订单 ${orderId} 吗？`)) {
+                orders = orders.filter(o => o.id !== orderId);
+                renderTable();
+            }
+        }
+        
+        addOrderBtn.addEventListener('click', () => openModal());
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (e) => {
+            if (e.target == orderModal) {
+                closeModal();
+            }
+        });
+
+        orderForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(orderForm);
+            const orderData = {
+                id: document.getElementById('modal-order-id').value,
+                customer: document.getElementById('modal-customer-name').value,
+                date: document.getElementById('modal-order-date').value,
+                status: document.getElementById('modal-order-status').value,
+                amount: parseFloat(document.getElementById('modal-order-amount').value)
+            };
+
+            if (currentEditOrderId) {
+                const index = orders.findIndex(o => o.id === currentEditOrderId);
+                orders[index] = orderData;
+            } else {
+                orders.push(orderData);
+            }
+            renderTable();
+            closeModal();
+        });
+
+        // Initial render
+        renderTable();
+
+        // 用户管理功能
+        const userLoading = document.getElementById('userLoading');
+        const userError = document.getElementById('userError');
+        const userErrorMessage = document.getElementById('userErrorMessage');
+        const userTableBody = document.getElementById('userTableBody');
+        const refreshUsersBtn = document.getElementById('refreshUsers');
+
+        // 格式化日期时间
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 加载用户数据
+        async function loadUsers() {
+            // 显示加载状态
+            userLoading.classList.remove('hidden');
+            userError.classList.add('hidden');
+            userTableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center py-6 text-gray-500">
+                        <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin"></i>
+                        <p>加载用户数据中...</p>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+
+            try {
+                // 调用API获取用户列表
+                const response = await API.getUsers();
+                if (response.success) {
+                    renderUsers(response.data);
+                } else {
+                    showUserError(response.message || '加载用户数据失败');
+                }
+            } catch (error) {
+                showUserError('网络请求失败，请稍后重试');
+            } finally {
+                // 隐藏加载状态
+                userLoading.classList.add('hidden');
+            }
+        }
+
+        // 渲染用户表格
+        function renderUsers(users) {
+            if (users.length === 0) {
+                userTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-6 text-gray-500">
+                            <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                            <p>暂无用户数据</p>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            // 渲染用户数据
+            userTableBody.innerHTML = users.map(user => `
+                <tr>
+                    <td class="font-medium">${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${formatDateTime(user.registerTime)}</td>
+                    <td>${formatDateTime(user.lastLogin)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 显示用户错误信息
+        function showUserError(message) {
+            userErrorMessage.textContent = message;
+            userError.classList.remove('hidden');
+            userTableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center py-6 text-gray-500">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2 text-red-400"></i>
+                        <p>${message}</p>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+        }
+
+        // 绑定刷新按钮事件
+        refreshUsersBtn.addEventListener('click', loadUsers);
+
+        // 初始化加载用户数据
+        loadUsers();
+
+        // 实时更新机制 - 使用轮询方式
+        setInterval(loadUsers, 30000); // 每30秒自动刷新一次
+    </script>
+</body>
+</html>

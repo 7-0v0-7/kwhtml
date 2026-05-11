@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="../api.js"></script>
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --secondary-color: #1E40AF;
+            --background-color: #F3F4F6;
+            --card-background: #FFFFFF;
+            --text-color: #1F2937;
+            --muted-text-color: #6B7280;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .sidebar {
+            background-color: var(--card-background);
+            transition: width 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 4.5rem;
+        }
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-logo .logo-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-footer .sidebar-text {
+            display: none;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: var(--muted-text-color);
+            transition: background-color 0.2s, color 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-item:hover {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+        }
+        .sidebar-item.active {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        .sidebar-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        .top-bar {
+            background-color: var(--card-background);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        .search-bar {
+            background-color: #F3F4F6;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            width: 24rem;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            margin-left: 0.5rem;
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 1.25rem;
+        }
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .pagination button {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #E5E7EB;
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pagination button:hover {
+            background-color: #F9FAFB;
+        }
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        th {
+            background-color: #F9FAFB;
+            font-weight: 500;
+            color: var(--muted-text-color);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+        .btn-outline {
+            border: 1px solid #E5E7EB;
+            color: var(--text-color);
+        }
+        .btn-outline:hover {
+            background-color: #F9FAFB;
+        }
+        .btn-danger {
+            background-color: #EF4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #DC2626;
+        }
+        .user-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .filter-group label {
+            font-size: 0.875rem;
+            color: var(--muted-text-color);
+        }
+        .filter-group select, .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 0.5rem;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .badge-success {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        .badge-warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        .badge-danger {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex flex-col">
+        <div class="sidebar-logo p-4 flex items-center">
+            <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600"></i>
+            <span class="logo-text text-xl font-bold ml-2">后台管理</span>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="sidebar-item">
+                <i data-lucide="home" class="sidebar-icon"></i>
+                <span class="sidebar-text">首页</span>
+            </a>
+            <a href="order-management.html" class="sidebar-item">
+                <i data-lucide="shopping-cart" class="sidebar-icon"></i>
+                <span class="sidebar-text">订单管理</span>
+            </a>
+            <a href="user-management.html" class="sidebar-item active">
+                <i data-lucide="users" class="sidebar-icon"></i>
+                <span class="sidebar-text">用户管理</span>
+            </a>
+            <a href="image-management.html" class="sidebar-item">
+                <i data-lucide="image" class="sidebar-icon"></i>
+                <span class="sidebar-text">图片管理</span>
+            </a>
+            <a href="system-settings.html" class="sidebar-item">
+                <i data-lucide="settings" class="sidebar-icon"></i>
+                <span class="sidebar-text">系统管理</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer p-4">
+            <button id="sidebar-toggle" class="sidebar-item w-full justify-start">
+                <i data-lucide="chevrons-left" class="sidebar-icon"></i>
+                <span class="sidebar-text">收起</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Top Bar -->
+        <header class="top-bar h-16 flex items-center justify-between px-6">
+            <div class="search-bar">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                <input type="text" placeholder="搜索用户...">
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="btn btn-outline" onclick="window.location.href='../admin.html'">
+                    <i data-lucide="home" class="w-5 h-5 mr-2"></i>
+                    返回健康平台
+                </button>
+                <button class="btn btn-outline">
+                    <i data-lucide="bell" class="w-5 h-5 mr-2"></i>
+                    通知
+                </button>
+                <div class="flex items-center">
+                    <div class="user-avatar">JD</div>
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold">John Doe</p>
+                        <p class="text-xs text-gray-500">Admin</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-grow p-6 overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6">用户管理</h1>
+
+            <!-- User Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>248</h3>
+                            <p>总用户数</p>
+                        </div>
+                        <div class="stat-change positive">
+                            <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i>
+                            +12%
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>24</h3>
+                            <p>本月新增</p>
+                        </div>
+                        <div class="stat-change positive">
+                            <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i>
+                            +3%
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>5</h3>
+                            <p>待审核</p>
+                        </div>
+                         <div class="stat-change negative">
+                            <i data-lucide="user-x" class="w-4 h-4 mr-1"></i>
+                            需处理
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-6">
+                <div class="filter-container">
+                    <div class="filter-group">
+                        <label for="user-role">用户角色:</label>
+                        <select id="user-role">
+                            <option value="all">全部</option>
+                            <option value="admin">管理员</option>
+                            <option value="user">普通用户</option>
+                            <option value="guest">访客</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="user-status">用户状态:</label>
+                        <select id="user-status">
+                            <option value="all">全部</option>
+                            <option value="active">激活</option>
+                            <option value="inactive">未激活</option>
+                            <option value="banned">禁用</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary ml-auto" id="apply-filters">
+                        <i data-lucide="filter" class="w-5 h-5 mr-2"></i>
+                        应用筛选
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">用户列表</h2>
+                    <button class="btn btn-primary" id="add-user-btn">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        新增用户
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all">
+                                </th>
+                                <th>用户</th>
+                                <th>邮箱</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                                <th>注册日期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox" class="user-checkbox"></td>
+                                <td>
+                                    <div class="flex items-center">
+                                        <div class="user-avatar">ZS</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-semibold">张三</p>
+                                            <p class="text-xs text-gray-500">user_001</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>zhangsan@example.com</td>
+                                <td><span class="badge badge-success">管理员</span></td>
+                                <td><span class="badge badge-success">激活</span></td>
+                                <td>2023-01-15</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-user-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-user-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-user-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" class="user-checkbox"></td>
+                                <td>
+                                    <div class="flex items-center">
+                                        <div class="user-avatar">LS</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-semibold">李四</p>
+                                            <p class="text-xs text-gray-500">user_002</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>lisi@example.com</td>
+                                <td><span class="badge badge-warning">普通用户</span></td>
+                                <td><span class="badge badge-success">激活</span></td>
+                                <td>2023-02-20</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-user-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-user-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-user-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" class="user-checkbox"></td>
+                                <td>
+                                    <div class="flex items-center">
+                                        <div class="user-avatar">WW</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-semibold">王五</p>
+                                            <p class="text-xs text-gray-500">user_003</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>wangwu@example.com</td>
+                                <td><span class="badge badge-warning">普通用户</span></td>
+                                <td><span class="badge badge-danger">禁用</span></td>
+                                <td>2023-03-10</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-user-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-user-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-user-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                             <tr>
+                                <td><input type="checkbox" class="user-checkbox"></td>
+                                <td>
+                                    <div class="flex items-center">
+                                        <div class="user-avatar">ZL</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-semibold">赵六</p>
+                                            <p class="text-xs text-gray-500">user_004</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>zhaoliu@example.com</td>
+                                <td><span class="badge badge-danger">访客</span></td>
+                                <td><span class="badge badge-warning">未激活</span></td>
+                                <td>2023-04-05</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-user-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-user-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-user-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                             <tr>
+                                <td><input type="checkbox" class="user-checkbox"></td>
+                                <td>
+                                    <div class="flex items-center">
+                                        <div class="user-avatar">SQ</div>
+                                        <div class="ml-3">
+                                            <p class="text-sm font-semibold">孙七</p>
+                                            <p class="text-xs text-gray-500">user_005</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>sunqi@example.com</td>
+                                <td><span class="badge badge-warning">普通用户</span></td>
+                                <td><span class="badge badge-success">激活</span></td>
+                                <td>2023-05-22</td>
+                                <td>
+                                    <button class="text-blue-600 hover:text-blue-800 edit-user-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                                    <button class="text-red-600 hover:text-red-800 ml-2 delete-user-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-user-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold mb-4" id="modal-title">新增用户</h2>
+            <form id="user-form">
+                <div class="form-group">
+                    <label for="modal-username">用户名</label>
+                    <input type="text" id="modal-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-email">邮箱</label>
+                    <input type="email" id="modal-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="modal-password">密码</label>
+                    <input type="password" id="modal-password">
+                </div>
+                <div class="form-group">
+                    <label for="modal-role">角色</label>
+                    <select id="modal-role" required>
+                        <option value="admin">管理员</option>
+                        <option value="user">普通用户</option>
+                        <option value="guest">访客</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-status">状态</label>
+                    <select id="modal-status" required>
+                        <option value="active">激活</option>
+                        <option value="inactive">未激活</option>
+                        <option value="banned">禁用</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-notes">备注</label>
+                    <textarea id="modal-notes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancel-modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View User Modal -->
+    <div id="view-user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold mb-4">查看用户</h2>
+            <div id="user-details">
+                <!-- User details will be inserted here -->
+            </div>
+             <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="close-view-modal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查用户是否已登录
+        if (!localStorage.getItem('currentUser')) {
+            // 如果未登录，重定向到登录页面
+            window.location.href = '../login.html';
+        }
+        
+        lucide.createIcons();
+
+        // Sidebar Toggle
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarToggleIcon = sidebarToggle.querySelector('i');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-right');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '展开';
+            } else {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-left');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '收起';
+            }
+            lucide.createIcons();
+        });
+
+        // Pagination
+        const paginationButtons = document.querySelectorAll('.pagination button');
+        paginationButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                paginationButtons.forEach(btn => btn.classList.remove('active'));
+                if (!button.querySelector('i')) {
+                    button.classList.add('active');
+                }
+            });
+        });
+        
+        // Search Functionality
+        const searchInput = document.querySelector('.search-bar input');
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                searchUsers(searchInput.value);
+                searchInput.value = '';
+            }
+        });
+
+        // User Data
+        let users = [];
+        let currentEditUserId = null;
+
+        // Load Users from API
+        async function loadUsers() {
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-6 text-gray-500">
+                        <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 text-gray-400 animate-spin"></i>
+                        <p>加载用户数据中...</p>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+
+            try {
+                const response = await API.getUsers();
+                if (response.success) {
+                    // 为每个用户添加默认角色和状态
+                    users = response.data.map(user => ({
+                        ...user,
+                        role: user.role || 'user', // 默认普通用户
+                        status: user.status || 'active', // 默认激活状态
+                        notes: user.notes || ''
+                    }));
+                    renderUsersTable();
+                } else {
+                    showError('获取用户列表失败: ' + response.message);
+                }
+            } catch (error) {
+                showError('网络请求失败，请稍后重试');
+            }
+        }
+
+        // Show Error Message
+        function showError(message) {
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-6 text-red-500">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                        <p>${message}</p>
+                    </td>
+                </tr>
+            `;
+            lucide.createIcons();
+        }
+
+        // Format Date
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Render Users Table
+        function renderUsersTable(usersData = users) {
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = '';
+            
+            if (usersData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-6 text-gray-500">
+                            <i data-lucide="users" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                            <p>暂无用户数据</p>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            usersData.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // Role Badge
+                let roleBadge = '';
+                if (user.role === 'admin') {
+                    roleBadge = '<span class="badge badge-success">管理员</span>';
+                } else if (user.role === 'user') {
+                    roleBadge = '<span class="badge badge-warning">普通用户</span>';
+                } else {
+                    roleBadge = '<span class="badge badge-danger">访客</span>';
+                }
+                
+                // Status Badge
+                let statusBadge = '';
+                if (user.status === 'active') {
+                    statusBadge = '<span class="badge badge-success">激活</span>';
+                } else if (user.status === 'inactive') {
+                    statusBadge = '<span class="badge badge-warning">未激活</span>';
+                } else {
+                    statusBadge = '<span class="badge badge-danger">禁用</span>';
+                }
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" class="user-checkbox"></td>
+                    <td>
+                        <div class="flex items-center">
+                            <div class="user-avatar">${user.username.substring(0, 2).toUpperCase()}</div>
+                            <div class="ml-3">
+                                <p class="text-sm font-semibold">${user.username}</p>
+                                <p class="text-xs text-gray-500">${user.username}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>${roleBadge}</td>
+                    <td>${statusBadge}</td>
+                    <td>${formatDateTime(user.registerTime)}</td>
+                    <td>
+                        <button class="text-blue-600 hover:text-blue-800 edit-user-btn"><i data-lucide="edit" class="w-5 h-5"></i></button>
+                        <button class="text-red-600 hover:text-red-800 ml-2 delete-user-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        <button class="text-yellow-600 hover:text-yellow-800 ml-2 view-user-btn"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            lucide.createIcons();
+            attachEventListeners();
+        }
+
+        // Attach Event Listeners
+        function attachEventListeners() {
+            // Table Operations
+            const editButtons = document.querySelectorAll('.edit-user-btn');
+            const deleteButtons = document.querySelectorAll('.delete-user-btn');
+            const viewButtons = document.querySelectorAll('.view-user-btn');
+            const selectAllCheckbox = document.getElementById('select-all');
+            const userCheckboxes = document.querySelectorAll('.user-checkbox');
+
+            editButtons.forEach(button => {
+                button.addEventListener('click', handleEditUser);
+            });
+
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', handleDeleteUser);
+            });
+
+            viewButtons.forEach(button => {
+                button.addEventListener('click', handleViewUser);
+            });
+            
+            selectAllCheckbox.removeEventListener('change', handleSelectAll); // Remove previous listener
+            selectAllCheckbox.addEventListener('change', handleSelectAll);
+        }
+
+        // Modal Functionality
+        const userModal = document.getElementById('user-modal');
+        const viewUserModal = document.getElementById('view-user-modal');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const closeBtns = document.querySelectorAll('.close');
+        const cancelModalBtn = document.getElementById('cancel-modal');
+        const closeViewModalBtn = document.getElementById('close-view-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const userForm = document.getElementById('user-form');
+
+        addUserBtn.addEventListener('click', () => {
+            openUserModal();
+        });
+
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                userModal.style.display = "none";
+                viewUserModal.style.display = "none";
+            });
+        });
+
+        cancelModalBtn.addEventListener('click', () => {
+            userModal.style.display = "none";
+        });
+        
+        closeViewModalBtn.addEventListener('click', () => {
+            viewUserModal.style.display = "none";
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == userModal) {
+                userModal.style.display = "none";
+            }
+            if (event.target == viewUserModal) {
+                viewUserModal.style.display = "none";
+            }
+        });
+
+        // Open User Modal
+        function openUserModal(username = null) {
+            currentEditUserId = username;
+            if (username) {
+                const user = users.find(u => u.username === username);
+                modalTitle.textContent = '编辑用户';
+                document.getElementById('modal-username').value = user.username;
+                document.getElementById('modal-email').value = user.email;
+                document.getElementById('modal-password').value = '';
+                document.getElementById('modal-role').value = user.role;
+                document.getElementById('modal-status').value = user.status;
+                document.getElementById('modal-notes').value = user.notes || '';
+            } else {
+                modalTitle.textContent = '新增用户';
+                userForm.reset();
+                // 默认角色为普通用户
+                document.getElementById('modal-role').value = 'user';
+            }
+            userModal.style.display = "block";
+        }
+
+        // Handle Form Submission
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveUser();
+        });
+
+        // Password hashing function (same as in login.html)
+        const hashPassword = (pwd) => {
+            let hash = 0;
+            for (let i = 0; i < pwd.length; i++) {
+                const char = pwd.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return hash.toString(16);
+        };
+
+        // Save User
+        async function saveUser() {
+            const username = document.getElementById('modal-username').value;
+            const email = document.getElementById('modal-email').value;
+            const password = document.getElementById('modal-password').value;
+            const role = document.getElementById('modal-role').value;
+            const status = document.getElementById('modal-status').value;
+            const notes = document.getElementById('modal-notes').value;
+
+            try {
+                if (currentEditUserId) {
+                    // Edit existing user
+                    const userData = {
+                        role: role,
+                        status: status,
+                        notes: notes
+                    };
+                    
+                    // 如果输入了密码，则更新密码
+                    if (password) {
+                        userData.password = hashPassword(password);
+                    }
+                    
+                    const response = await API.updateUser(currentEditUserId, userData);
+                    if (response.success) {
+                        alert('用户信息更新成功');
+                        await loadUsers();
+                        userModal.style.display = "none";
+                    } else {
+                        alert('更新失败: ' + response.message);
+                    }
+                } else {
+                    // Add new user
+                    if (!password) {
+                        alert('请输入密码');
+                        return;
+                    }
+                    
+                    const userData = {
+                        username: username,
+                        password: hashPassword(password),
+                        email: email,
+                        role: role,
+                        status: status,
+                        notes: notes
+                    };
+                    
+                    const response = await API.addUser(userData);
+                    if (response.success) {
+                        alert('用户添加成功');
+                        await loadUsers();
+                        userModal.style.display = "none";
+                    } else {
+                        alert('添加失败: ' + response.message);
+                    }
+                }
+            } catch (error) {
+                alert('操作失败，请稍后重试');
+            }
+        }
+
+        // Handle Edit User
+        function handleEditUser(e) {
+            const row = e.target.closest('tr');
+            const username = row.cells[1].querySelector('p.text-xs').textContent;
+            openUserModal(username);
+        }
+
+        // Handle Delete User
+        async function handleDeleteUser(e) {
+            const row = e.target.closest('tr');
+            const username = row.cells[1].querySelector('p.font-semibold').textContent;
+            
+            if (confirm(`确定要删除用户 ${username} 吗？`)) {
+                try {
+                    const response = await API.deleteUser(username);
+                    if (response.success) {
+                        alert('用户删除成功');
+                        await loadUsers();
+                    } else {
+                        alert('删除失败: ' + response.message);
+                    }
+                } catch (error) {
+                    alert('删除失败，请稍后重试');
+                }
+            }
+        }
+
+        // Handle View User
+        function handleViewUser(e) {
+            const row = e.target.closest('tr');
+            const userName = row.cells[1].querySelector('p.font-semibold').textContent;
+            const userId = row.cells[1].querySelector('p.text-xs').textContent;
+            const userEmail = row.cells[2].textContent;
+            const userRole = row.cells[3].textContent;
+            const userStatus = row.cells[4].textContent;
+            const registrationDate = row.cells[5].textContent;
+
+            const userDetailsHtml = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>用户名:</strong> ${userName}</div>
+                    <div><strong>用户ID:</strong> ${userId}</div>
+                    <div><strong>邮箱:</strong> ${userEmail}</div>
+                    <div><strong>角色:</strong> ${userRole}</div>
+                    <div><strong>状态:</strong> ${userStatus}</div>
+                    <div><strong>注册日期:</strong> ${registrationDate}</div>
+                </div>
+                <div class="mt-4">
+                    <h3 class="font-semibold mb-2">最近活动</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>活动类型</th>
+                                    <th>时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>登录</td>
+                                    <td>2023-10-15 10:30</td>
+                                </tr>
+                                <tr>
+                                    <td>修改密码</td>
+                                    <td>2023-10-10 14:45</td>
+                                </tr>
+                                <tr>
+                                    <td>下单</td>
+                                    <td>2023-10-05 09:12</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            document.getElementById('user-details').innerHTML = userDetailsHtml;
+            viewUserModal.style.display = "block";
+        }
+
+        // Handle Select All
+        function handleSelectAll(e) {
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        }
+
+        // Search Users
+        function searchUsers(keyword) {
+            if (!keyword) {
+                renderUsersTable();
+                return;
+            }
+            
+            const filteredUsers = users.filter(user => 
+                user.username.includes(keyword) || 
+                user.email.includes(keyword)
+            );
+            
+            renderUsersTable(filteredUsers);
+        }
+
+        // Filter Functionality
+        const applyFiltersBtn = document.getElementById('apply-filters');
+        applyFiltersBtn.addEventListener('click', () => {
+            const roleFilter = document.getElementById('user-role').value;
+            const statusFilter = document.getElementById('user-status').value;
+
+            let filteredUsers = [...users];
+            
+            // Apply role filter
+            if (roleFilter !== 'all') {
+                filteredUsers = filteredUsers.filter(user => user.role === roleFilter);
+            }
+            
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filteredUsers = filteredUsers.filter(user => user.status === statusFilter);
+            }
+            
+            renderUsersTable(filteredUsers);
+        });
+
+        // Initial render
+        loadUsers();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadUsers, 30000);
+
+    </script>
+</body>
+</html>

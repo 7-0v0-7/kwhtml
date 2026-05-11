@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理 - 后台管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --secondary-color: #1E40AF;
+            --background-color: #F3F4F6;
+            --card-background: #FFFFFF;
+            --text-color: #1F2937;
+            --muted-text-color: #6B7280;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .sidebar {
+            background-color: var(--card-background);
+            transition: width 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 4.5rem;
+        }
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-logo .logo-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-footer .sidebar-text {
+            display: none;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: var(--muted-text-color);
+            transition: background-color 0.2s, color 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-item:hover {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+        }
+        .sidebar-item.active {
+            background-color: #EFF6FF;
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        .sidebar-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        .top-bar {
+            background-color: var(--card-background);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        .search-bar {
+            background-color: #F3F4F6;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            width: 24rem;
+        }
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            margin-left: 0.5rem;
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            padding: 1.25rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+        .btn-outline {
+            border: 1px solid #E5E7EB;
+            color: var(--text-color);
+        }
+        .btn-outline:hover {
+            background-color: #F9FAFB;
+        }
+        .btn-danger {
+            background-color: #EF4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #DC2626;
+        }
+        .user-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea, .form-group .custom-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.375rem;
+            background-color: white;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .tab-container {
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 2rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 1rem;
+        }
+        .tab {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            color: var(--muted-text-color);
+            transition: color 0.2s;
+        }
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+        .alert-success {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        .alert-warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        .alert-danger {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+        .log-entry {
+            padding: 0.75rem;
+            border-bottom: 1px solid #E5E7EB;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 3.5rem;
+            height: 1.75rem;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 1.75rem;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 1.25rem;
+            width: 1.25rem;
+            left: 0.25rem;
+            bottom: 0.25rem;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(1.75rem);
+        }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex flex-col">
+        <div class="sidebar-logo p-4 flex items-center">
+            <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600"></i>
+            <span class="logo-text text-xl font-bold ml-2">后台管理</span>
+        </div>
+        <nav class="flex-grow">
+            <a href="index.html" class="sidebar-item">
+                <i data-lucide="home" class="sidebar-icon"></i>
+                <span class="sidebar-text">首页</span>
+            </a>
+            <a href="order-management.html" class="sidebar-item">
+                <i data-lucide="shopping-cart" class="sidebar-icon"></i>
+                <span class="sidebar-text">订单管理</span>
+            </a>
+            <a href="user-management.html" class="sidebar-item">
+                <i data-lucide="users" class="sidebar-icon"></i>
+                <span class="sidebar-text">用户管理</span>
+            </a>
+            <a href="image-management.html" class="sidebar-item">
+                <i data-lucide="image" class="sidebar-icon"></i>
+                <span class="sidebar-text">图片管理</span>
+            </a>
+            <a href="system-settings.html" class="sidebar-item active">
+                <i data-lucide="settings" class="sidebar-icon"></i>
+                <span class="sidebar-text">系统管理</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer p-4">
+            <button id="sidebar-toggle" class="sidebar-item w-full justify-start">
+                <i data-lucide="chevrons-left" class="sidebar-icon"></i>
+                <span class="sidebar-text">收起</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Top Bar -->
+        <header class="top-bar h-16 flex items-center justify-between px-6">
+            <div class="search-bar">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                <input type="text" placeholder="搜索设置...">
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="btn btn-outline" onclick="window.location.href='../admin.html'">
+                    <i data-lucide="home" class="w-5 h-5 mr-2"></i>
+                    返回健康平台
+                </button>
+                <button class="btn btn-outline">
+                    <i data-lucide="bell" class="w-5 h-5 mr-2"></i>
+                    通知
+                </button>
+                <div class="flex items-center">
+                    <div class="user-avatar">JD</div>
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold">John Doe</p>
+                        <p class="text-xs text-gray-500">Admin</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-grow p-6 overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6">系统管理</h1>
+
+            <!-- Tabs -->
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="general">基本设置</div>
+                    <div class="tab" data-tab="appearance">外观设置</div>
+                    <div class="tab" data-tab="notifications">通知设置</div>
+                    <div class="tab" data-tab="system">系统信息</div>
+                    <div class="tab" data-tab="logs">系统日志</div>
+                </div>
+            </div>
+
+            <!-- General Settings -->
+            <div id="general" class="tab-content active">
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-4">基本设置</h2>
+                    <form id="general-settings-form">
+                        <div class="form-group">
+                            <label for="site-name">网站名称</label>
+                            <input type="text" id="site-name" value="后台管理系统">
+                        </div>
+                        <div class="form-group">
+                            <label for="site-description">网站描述</label>
+                            <textarea id="site-description" rows="3">一个功能强大的后台管理系统。</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="default-language">默认语言</label>
+                            <select id="default-language">
+                                <option value="zh-CN">简体中文</option>
+                                <option value="en-US">English</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="timezone">时区</label>
+                            <select id="timezone">
+                                <option value="Asia/Shanghai">Asia/Shanghai</option>
+                                <option value="America/New_York">America/New_York</option>
+                                <option value="Europe/London">Europe/London</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline">取消</button>
+                            <button type="submit" class="btn btn-primary">保存更改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Appearance Settings -->
+            <div id="appearance" class="tab-content">
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-4">外观设置</h2>
+                    <form id="appearance-settings-form">
+                        <div class="form-group">
+                            <label for="theme">主题</label>
+                            <select id="theme">
+                                <option value="light">浅色</option>
+                                <option value="dark">深色</option>
+                                <option value="auto">跟随系统</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="primary-color">主色调</label>
+                            <input type="color" id="primary-color" value="#3B82F6">
+                        </div>
+                        <div class="form-group">
+                            <label for="sidebar-style">侧边栏风格</label>
+                            <select id="sidebar-style">
+                                <option value="default">默认</option>
+                                <option value="compact">紧凑</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline">取消</button>
+                            <button type="submit" class="btn btn-primary">保存更改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div id="notifications" class="tab-content">
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-4">通知设置</h2>
+                    <form id="notification-settings-form">
+                        <div class="form-group flex items-center justify-between">
+                            <div>
+                                <label for="email-notifications" class="block">邮件通知</label>
+                                <p class="text-sm text-gray-500">当有新订单或新用户注册时发送邮件通知。</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="email-notifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group flex items-center justify-between">
+                            <div>
+                                <label for="sms-notifications" class="block">短信通知</label>
+                                <p class="text-sm text-gray-500">当有紧急事件时发送短信通知。</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="sms-notifications">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="notification-email">通知邮箱</label>
+                            <input type="email" id="notification-email" value="admin@example.com">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline">取消</button>
+                            <button type="submit" class="btn btn-primary">保存更改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- System Info -->
+            <div id="system" class="tab-content">
+                <div class="card">
+                    <h2 class="text-lg font-semibold mb-4">系统信息</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-semibold mb-2">系统</h3>
+                            <p><strong>版本:</strong> v1.0.0</p>
+                            <p><strong>最后更新:</strong> 2023-10-15</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold mb-2">服务器</h3>
+                            <p><strong>操作系统:</strong> Linux</p>
+                            <p><strong>PHP 版本:</strong> 8.1</p>
+                            <p><strong>数据库:</strong> MySQL 8.0</p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="font-semibold mb-2">操作</h3>
+                        <button class="btn btn-outline" id="backup-database-btn"><i data-lucide="database" class="w-5 h-5 mr-2"></i>备份数据库</button>
+                        <button class="btn btn-danger ml-2" id="clear-cache-btn"><i data-lucide="trash-2" class="w-5 h-5 mr-2"></i>清除缓存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Logs -->
+            <div id="logs" class="tab-content">
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold">系统日志</h2>
+                        <button class="btn btn-outline" id="refresh-logs-btn"><i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>刷新</button>
+                    </div>
+                    <div class="log-container" style="max-height: 400px; overflow-y: auto;">
+                        <div class="log-entry">2023-10-15 10:30:00 - 用户张三登录系统。</div>
+                        <div class="log-entry">2023-10-15 09:45:00 - 订单 #1001 创建成功。</div>
+                        <div class="log-entry">2023-10-14 16:20:00 - 系统设置已更新。</div>
+                        <div class="log-entry">2023-10-14 14:15:00 - 新用户李四注册。</div>
+                        <div class="log-entry">2023-10-13 11:00:00 - 数据库备份完成。</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // 检查用户是否已登录
+        if (!localStorage.getItem('currentUser')) {
+            // 如果未登录，重定向到登录页面
+            window.location.href = '../login.html';
+        }
+        
+        lucide.createIcons();
+
+        // Sidebar Toggle
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarToggleIcon = sidebarToggle.querySelector('i');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-right');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '展开';
+            } else {
+                sidebarToggleIcon.setAttribute('data-lucide', 'chevrons-left');
+                sidebarToggle.querySelector('.sidebar-text').textContent = '收起';
+            }
+            lucide.createIcons();
+        });
+        
+        // Tab Functionality
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.dataset.tab;
+
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Form Submissions
+        const generalSettingsForm = document.getElementById('general-settings-form');
+        const appearanceSettingsForm = document.getElementById('appearance-settings-form');
+        const notificationSettingsForm = document.getElementById('notification-settings-form');
+
+        generalSettingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('基本设置已保存！');
+        });
+
+        appearanceSettingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('外观设置已保存！');
+        });
+
+        notificationSettingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('通知设置已保存！');
+        });
+
+        // System Operations
+        const backupDatabaseBtn = document.getElementById('backup-database-btn');
+        const clearCacheBtn = document.getElementById('clear-cache-btn');
+        const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+
+        backupDatabaseBtn.addEventListener('click', () => {
+            alert('数据库备份已开始，请稍候...');
+            // 模拟备份过程
+            setTimeout(() => {
+                alert('数据库备份完成！');
+            }, 2000);
+        });
+
+        clearCacheBtn.addEventListener('click', () => {
+            if (confirm('确定要清除系统缓存吗？')) {
+                alert('缓存已清除！');
+            }
+        });
+
+        refreshLogsBtn.addEventListener('click', () => {
+            alert('日志已刷新！');
+        });
+
+        // Search Functionality
+        const searchInput = document.querySelector('.search-bar input');
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                alert(`搜索设置: ${searchInput.value}`);
+                searchInput.value = '';
+            }
+        });
+
+    </script>
+</body>
+</html>
